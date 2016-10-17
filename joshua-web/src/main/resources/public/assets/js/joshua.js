@@ -50032,6 +50032,616 @@ return /******/ (function(modules) { // webpackBootstrap
 });
 ;
 /**
+ * 公共函数定义
+ */
+var enableArticle = function (id) {
+    new Dialog("激活文章", "激活文章后会重新在网站显示，确认要激活吗？", function () {
+        var formData = new FormData();
+        formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+        formData.append("id", id);
+
+        $.ajax({
+            url: "/api/article/enable",
+            type: "post",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (status) {
+                if ("success" == status) {
+                    new Dialog("激活文章", "激活成功", function () {
+                        window.location.reload();
+                    }).message();
+                } else {
+                    new Dialog("激活文章", "激活失败，原因：" + status, function () {
+                    }).error();
+                }
+            },
+            error: function () {
+                new Dialog("激活文章", "激活失败", function () {
+                }).error();
+            }
+        });
+    }).confirm();
+};
+
+var disableArticle = function (id) {
+    new Dialog("禁用文章", "禁用文章后不会在网站显示，确认要禁用吗？", function () {
+        var formData = new FormData();
+        formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+        formData.append("id", id);
+
+        $.ajax({
+            url: "/api/article/disable",
+            type: "post",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (status) {
+                if ("success" == status) {
+                    new Dialog("禁用文章", "禁用成功", function () {
+                        window.location.reload();
+                    }).message();
+                } else {
+                    new Dialog("禁用文章", "禁用失败，原因：" + status, function () {
+                    }).error();
+                }
+            },
+            error: function () {
+                new Dialog("禁用文章", "禁用失败", function () {
+                }).error();
+            }
+        });
+    }).confirm();
+};
+
+$(document).ready(function () {
+    $(".ui.admin.article.enable.button").on("click", function () {
+        enableArticle($(this).data("id"));
+    });
+
+    $(".ui.admin.article.disable.button").on("click", function () {
+        disableArticle($(this).data("id"));
+    });
+});
+
+/**
+ * 公共函数定义
+ */
+
+var showDimmer = function () {
+    $(".ui.dimmer").dimmer("show");
+};
+
+var hideDimmer = function () {
+    $(".ui.dimmer").dimmer("hide");
+};
+
+var saveArticle = function (quill) {
+    var title = $(".article-editor .input.title").val();
+    var fellowship = $(".article-editor .dropdown.fellowship").dropdown('get value');
+
+    if (!title) {
+        new Dialog("保存文章", "文章标题不能为空").message();
+        return;
+    }
+
+    if (!fellowship) {
+        new Dialog("保存文章", "文章所属团契不能为空").message();
+        return;
+    }
+
+    showDimmer();
+
+    var formData = new FormData();
+    formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+    formData.append("id", $(".article-editor .input.id").val());
+    formData.append("title", title);
+    formData.append("fellowship", fellowship);
+    formData.append("description", $(".article-editor .input.description").val());
+    formData.append("content",
+        JSON.stringify(quill.getContents())
+            .replace(/\n/g, "\\n")
+    );
+
+    $.ajax({
+        url: "/api/article/save",
+        type: "post",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (status) {
+            if (status) {
+                hideDimmer();
+                new Dialog("保存文章", "保存成功", function () {
+                    window.location = '/admin/article/' + status + '/edit';
+                }).message();
+            } else {
+                new Dialog("保存文章", "保存失败，原因：" + status, function () {
+                    hideDimmer();
+                }).error();
+            }
+        },
+        error: function () {
+            new Dialog("保存文章", "保存失败", function () {
+                hideDimmer();
+            }).error();
+        }
+    });
+};
+
+/**
+ * 文章编辑器
+ */
+$(document).ready(function () {
+
+    /**
+     * 工具条定义
+     */
+    var toolbarOptions = [
+
+        /* 基本控件 */
+        [{'header': [1, 2, 3, 4, 5, 6, false]}],
+
+        /* 文字样式控件 */
+        ['bold', 'italic', 'underline', 'strike'],
+        [{'color': []}, {'background': []}],
+
+        /* 文字对齐控件 */
+        [{'align': []}],
+        [{'list': 'ordered'}, {'list': 'bullet'}],
+        [{'indent': '-1'}, {'indent': '+1'}],
+
+        /* 其他控件 */
+        ['link', 'image'],
+        [{'script': 'sub'}, {'script': 'super'}],
+        ['clean']
+    ];
+
+    /**
+     * 初始化编辑器
+     */
+    if ($(".article-editor .container").length > 0) {
+        var quill = new Quill(".article-editor .container", {
+            placeholder: '请输入文章内容，文章大小最多为20M，超过以后会保存失败',
+            modules: {
+                toolbar: toolbarOptions
+            },
+            theme: 'snow'
+        });
+
+        var content = $(".article-editor .article-content").text();
+
+        if (content) {
+            var delta = JSON.parse(content);
+            quill.setContents(delta.ops);
+        }
+    }
+
+    /**
+     * 保存文章
+     */
+    $(".article-editor .ui.save.button").on("click", function () {
+        saveArticle(quill);
+    });
+
+    /**
+     * 申请发布文章
+     */
+    $(".article-editor .ui.audit.button").on("click", function () {
+
+        new Dialog("申请发布", "确定要申请发布文章吗？， 申请发布后将不能再修改文章内容，如果文章被驳回，则可以修改以后继续发布", function () {
+            showDimmer();
+
+            var formData = new FormData();
+            formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+            formData.append("id", $(".article-editor .input.id").val());
+
+            $.ajax({
+                url: "/api/article/audit",
+                type: "post",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (status) {
+                    if ("success" == status) {
+                        new Dialog("申请发布", "申请发布成功", function () {
+                            hideDimmer();
+                            window.location.reload();
+                        }).message();
+                    } else {
+                        new Dialog("申请发布", "申请发布失败，原因:" + status, function () {
+                            hideDimmer();
+                        }).error();
+                    }
+                },
+                error: function () {
+                    new Dialog("申请发布", "申请发布失败", function () {
+                        hideDimmer();
+                    }).error();
+                }
+            });
+        }).confirm();
+    });
+
+    /**
+     * 初始化下拉菜单
+     */
+    $(".article-editor .ui.fellowship.dropdown").dropdown();
+});
+
+/**
+ * 文章阅读器
+ */
+$(document).ready(function () {
+
+    if ($(".article-reader .container").length > 0) {
+        var quill = new Quill(".article-reader .container", {
+            modules: {
+                toolbar: false
+            },
+            theme: 'snow',
+            readOnly: true
+        });
+
+        var delta = JSON.parse($(".article-reader .article-content").text());
+        quill.setContents(delta.ops);
+    }
+});
+
+/**
+ * 文章审核器
+ */
+$(document).ready(function () {
+
+    if ($(".article-audit .container").length > 0) {
+        var quill = new Quill(".article-audit .container", {
+            modules: {
+                toolbar: false
+            },
+            theme: 'snow',
+            readOnly: true
+        });
+
+        var delta = JSON.parse($(".article-audit .article-content").text());
+        quill.setContents(delta.ops);
+    }
+
+    $(".article-audit .publish.button").on("click", function () {
+        new Dialog("发布文章", "确定要发布文章？ 文章发布以后即可在网站访问", function () {
+            showDimmer();
+            var formData = new FormData();
+            formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+            formData.append("id", $(".article-audit .input.id").val());
+
+            $.ajax({
+                url: "/api/article/publish",
+                type: "post",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (status) {
+                    if ("success" == status) {
+                        new Dialog("发布文章", "发布成功", function () {
+                            hideDimmer();
+                            window.location.reload();
+                        }).message();
+                    } else {
+                        new Dialog("发布文章", "发布失败，原因:" + status, function () {
+                            hideDimmer();
+                        }).error();
+                    }
+                },
+                error: function () {
+                    new Dialog("发布文章", "发布失败", function () {
+                        hideDimmer();
+                    }).error();
+                }
+            });
+        }).confirm();
+    });
+
+    $(".article-audit .reject.button").on("click", function () {
+        new Dialog("驳回文章", "确定要驳回文章？", function () {
+            showDimmer();
+            var formData = new FormData();
+            formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+            formData.append("id", $(".article-audit .input.id").val());
+
+            $.ajax({
+                url: "/api/article/reject",
+                type: "post",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (status) {
+                    if ("success" == status) {
+                        new Dialog("驳回文章", "驳回成功", function () {
+                            hideDimmer();
+                            window.location.reload();
+                        }).message();
+                    } else {
+                        new Dialog("驳回文章", "驳回失败，原因:" + status, function () {
+                            hideDimmer();
+                        }).error();
+                    }
+                },
+                error: function () {
+                    new Dialog("驳回文章", "驳回失败", function () {
+                        hideDimmer();
+                    }).error();
+                }
+            });
+        }).confirm();
+    });
+});
+/**
+ * Created by Administrator on 16-9-24.
+ */
+
+var enableFellowship = function (name) {
+    new Dialog("激活团契", "激活团契后团契和团契所属的文章会重新在网站显示，确认要激活吗？", function () {
+        var formData = new FormData();
+        formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+        formData.append("name", name);
+
+        $.ajax({
+            url: "/api/fellowship/enable",
+            type: "post",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (status) {
+                if ("success" == status) {
+                    new Dialog("激活团契", "激活成功", function () {
+                        window.location.reload();
+                    }).message();
+                } else {
+                    new Dialog("激活团契", "激活失败，原因：" + status, function () {
+                    }).error();
+                }
+            },
+            error: function () {
+                new Dialog("激活团契", "激活失败", function () {
+                }).error();
+            }
+        });
+    }).confirm();
+};
+
+var disableFellowship = function (name) {
+    new Dialog("禁用团契", "禁用团契后团契和团契所属的文章将不会在网站显示，确认要禁用吗？", function () {
+        var formData = new FormData();
+        formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+        formData.append("name", name);
+
+        $.ajax({
+            url: "/api/fellowship/disable",
+            type: "post",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (status) {
+                if ("success" == status) {
+                    new Dialog("禁用团契", "禁用成功", function () {
+                        window.location.reload();
+                    }).message();
+                } else {
+                    new Dialog("禁用团契", "禁用失败，原因：" + status, function () {
+                    }).error();
+                }
+            },
+            error: function () {
+                new Dialog("禁用团契", "禁用失败", function () {
+                }).error();
+            }
+        });
+    }).confirm();
+};
+
+var transferFellowship = function (name, username) {
+    var formData = new FormData();
+    formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+    formData.append("name", name);
+    formData.append("username", username);
+
+    $.ajax({
+        url: "/api/fellowship/transfer",
+        type: "post",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (status) {
+            if ("success" == status) {
+                new Dialog("转移团契", "转移成功", function () {
+                    window.location.reload();
+                }).message();
+            } else {
+                new Dialog("转移团契", "转移失败，原因：" + status, function () {
+                }).error();
+            }
+        },
+        error: function () {
+            new Dialog("转移团契", "转移失败", function () {
+            }).error();
+        }
+    });
+};
+
+var addAdminFellowship = function (name, username) {
+    var formData = new FormData();
+    formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+    formData.append("name", name);
+    formData.append("username", username);
+
+    $.ajax({
+        url: "/api/fellowship/add",
+        type: "post",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (status) {
+            if ("success" == status) {
+                new Dialog("添加管理员", "添加管理员成功", function () {
+                    window.location.reload();
+                }).message();
+            } else {
+                new Dialog("添加管理员", "添加管理员失败，原因：" + status, function () {
+                }).error();
+            }
+        },
+        error: function () {
+            new Dialog("添加管理员", "添加管理员失败", function () {
+            }).error();
+        }
+    });
+};
+
+var removeAdminFellowship = function (name, username) {
+    new Dialog("移除管理员", "确定要移除管理员" + username + "?", function () {
+        var formData = new FormData();
+        formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+        formData.append("name", name);
+        formData.append("username", username);
+
+        $.ajax({
+            url: "/api/fellowship/remove",
+            type: "post",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (status) {
+                if ("success" == status) {
+                    new Dialog("移除管理员", "移除管理员成功", function () {
+                        window.location.reload();
+                    }).message();
+                } else {
+                    new Dialog("移除管理员", "移除管理员失败，原因：" + status, function () {
+                    }).error();
+                }
+            },
+            error: function () {
+                new Dialog("移除管理员", "移除管理员失败", function () {
+                }).error();
+            }
+        });
+    }).confirm();
+};
+
+$(document).ready(function () {
+    $(".ui.admin.fellowship.enable.button").on("click", function () {
+        enableFellowship($(this).data("name"));
+    });
+
+    $(".ui.admin.fellowship.disable.button").on("click", function () {
+        disableFellowship($(this).data("name"));
+    });
+
+    $(".ui.admin.fellowship.remove.button").on("click", function () {
+        removeAdminFellowship($("#fellowship-id").text().trim(), $(this).data("username"));
+    });
+
+    $(".ui.admin.fellowship.transfer.owner.button").on("click", function () {
+        $("#owner-username").val("");
+        $(".ui.admin.fellowship.transfer.modal").modal("show");
+    });
+
+    $(".ui.admin.fellowship.add.button").on("click", function () {
+        $("#admin-username").val("");
+        $(".ui.admin.fellowship.add.modal").modal("show");
+    });
+
+    $(".ui.admin.fellowship.transfer.modal").modal({
+        closeable: false,
+        onApprove: function () {
+            var input = $("#owner-username");
+            transferFellowship($("#fellowship-id").text().trim(), input.val());
+        },
+        onDeny: function () {
+            return true;
+        }
+    });
+
+    $(".ui.admin.fellowship.add.modal").modal({
+        closeable: false,
+        onApprove: function () {
+            var input = $("#admin-username");
+            addAdminFellowship($("#fellowship-id").text().trim(), input.val());
+        },
+        onDeny: function () {
+            return true;
+        }
+    });
+});
+var markMessageAsRead = function (id) {
+    var formData = new FormData();
+    formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+    formData.append("id", id);
+
+    $.ajax({
+        url: "/message/read",
+        type: "post",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (status) {
+            if ("success" == status) {
+                window.location.reload();
+            } else {
+                new Dialog("操作失败", "操作失败，原因：" + status, function () {
+                }).error();
+            }
+        },
+        error: function () {
+            new Dialog("操作失败", "操作失败", function () {
+            }).error();
+        }
+    });
+};
+
+var markMessageAsUnRead = function (id) {
+    var formData = new FormData();
+    formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+    formData.append("id", id);
+
+    $.ajax({
+        url: "/message/unread",
+        type: "post",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (status) {
+            if ("success" == status) {
+                window.location.reload();
+            } else {
+                new Dialog("操作失败", "操作失败，原因：" + status, function () {
+                }).error();
+            }
+        },
+        error: function () {
+            new Dialog("操作失败", "操作失败", function () {
+            }).error();
+        }
+    });
+};
+
+$(document).ready(function () {
+    $(".ui.admin.mark.read.button").on("click", function () {
+        markMessageAsRead($(this).data("id"));
+    });
+    
+    $(".ui.admin.mark.unread.button").on("click", function () {
+        markMessageAsUnRead($(this).data("id"));
+    });
+});
+
+
+
+
+
+
+
+
+/**
  * 后台用户管理操作
  */
 
@@ -50280,270 +50890,84 @@ Dialog.prototype.confirm = function () {
     this.init();
     this.modal.modal("show");
 };
-/**
- * 公共函数定义
- */
-
-var showDimmer = function () {
-    $(".ui.dimmer").dimmer("show");
-};
-
-var hideDimmer = function () {
-    $(".ui.dimmer").dimmer("hide");
-};
-
-/**
- * 文章编辑器
- */
 $(document).ready(function () {
+    $(".ui.user.forget.button").on("click", function () {
+        var username = $("input.user.forget.username").val();
+        var email = $("input.user.forget.email").val();
 
-    /**
-     * 工具条定义
-     */
-    var toolbarOptions = [
-
-        /* 基本控件 */
-        [{'header': [1, 2, 3, 4, 5, 6, false]}],
-        [{'font': []}],
-
-        /* 文字样式控件 */
-        ['bold', 'italic', 'underline', 'strike'],
-        [{'color': []}, {'background': []}],
-
-        /* 文字对齐控件 */
-        [{'align': []}],
-        [{'list': 'ordered'}, {'list': 'bullet'}],
-        [{'indent': '-1'}, {'indent': '+1'}],
-
-        /* 其他控件 */
-        ['link', 'image'],
-        [{'script': 'sub'}, {'script': 'super'}],
-        ['clean']
-    ];
-
-    /**
-     * 初始化编辑器
-     */
-    if ($(".article-editor .container").length > 0) {
-        var quill = new Quill(".article-editor .container", {
-            placeholder: '请输入文章内容',
-            modules: {
-                toolbar: toolbarOptions
-            },
-            theme: 'snow'
-        });
-
-        var content = $(".article-editor .article-content").text();
-
-        if (content) {
-            var delta = JSON.parse(content);
-            quill.setContents(delta.ops);
-        }
-    }
-
-    /**
-     * 保存文章
-     */
-    $(".article-editor .ui.save.button").on("click", function () {
-        var title = $(".article-editor .input.title").val();
-        var fellowship = $(".article-editor .dropdown.fellowship").dropdown('get value');
-
-        if (!title) {
-            new Dialog("保存文章", "文章标题不能为空").message();
-            return;
-        }
-
-        if (!fellowship) {
-            new Dialog("保存文章", "文章所属团契不能为空").message();
-            return;
-        }
-
-        showDimmer();
-
-        var formData = new FormData();
-        formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
-        formData.append("id", $(".article-editor .input.id").val());
-        formData.append("title", title);
-        formData.append("fellowship", fellowship);
-        formData.append("description", $(".article-editor .input.description").val());
-        formData.append("content",
-            JSON.stringify(quill.getContents())
-                .replace(/\n/g, "\\n")
-        );
-
-        $.ajax({
-            url: "/admin/article/save",
-            type: "post",
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (status) {
-                if ("success" == status) {
-                    new Dialog("保存文章", "保存成功", function () {
-                        hideDimmer();
-                    }).message();
-                } else {
-                    new Dialog("保存文章", "保存失败，原因：" + status, function () {
-                        hideDimmer();
-                    }).error();
-                }
-            },
-            error: function () {
-                new Dialog("保存文章", "保存失败", function () {
-                    hideDimmer();
-                }).error();
-            }
-        });
-    });
-
-    /**
-     * 申请发布文章
-     */
-    $(".article-editor .ui.audit.button").on("click", function () {
-
-        new Dialog("申请发布", "确定要申请发布文章吗？， 申请发布后讲不能再修改文章内容，如果文章被驳回，则可以修改以后继续发布", function () {
-            showDimmer();
-
+        if (username && email) {
             var formData = new FormData();
-            formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
-            formData.append("id", $(".article-editor .input.id").val());
+            formData.append("username", username);
+            formData.append("email", email);
 
             $.ajax({
-                url: "/api/article/audit",
+                url: "/forget",
                 type: "post",
                 data: formData,
                 processData: false,
                 contentType: false,
                 success: function (status) {
                     if ("success" == status) {
-                        new Dialog("申请发布", "申请发布成功", function () {
-                            hideDimmer();
-                            window.location.reload();
+                        new Dialog("重置密码", "重置密码成功，密码已经发送到邮箱：" + email, function () {
+                            window.location = "login";
                         }).message();
                     } else {
-                        new Dialog("申请发布", "申请发布失败，原因:" + status, function () {
-                            hideDimmer();
-                        }).error();
+                        new Dialog("重置密码", "重置密码失败，原因：" + status).error();
                     }
                 },
                 error: function () {
-                    new Dialog("申请发布", "申请发布失败", function () {
-                        hideDimmer();
+                    new Dialog("重置密码", "重置密码失败", function () {
                     }).error();
                 }
             });
-        }).confirm();
+        } else {
+            new Dialog("信息不正确", "必须填写登录名和邮箱").message()
+        }
     });
-
-    /**
-     * 初始化下拉菜单
-     */
-    $(".article-editor .ui.fellowship.dropdown").dropdown();
 });
 
-/**
- * 文章阅读器
- */
 $(document).ready(function () {
 
-    if ($(".article-reader .container").length > 0) {
-        var quill = new Quill(".article-reader .container", {
-            modules: {
-                toolbar: false
-            },
-            theme: 'snow',
-            readOnly: true
-        });
+    $(".ui.user.password.submit.button").on("click", function () {
+        var newPassword = $("#new-password").val();
+        var confirmPassword = $("#confirm-password").val();
 
-        var delta = JSON.parse($(".article-reader .article-content").text());
-        quill.setContents(delta.ops);
-    }
-});
+        if (newPassword.length < 8) {
+            new Dialog("修改密码", "新的密码长度不能少于8位").warning();
+            return;
+        }
 
-/**
- * 文章审核器
- */
-$(document).ready(function () {
+        if (newPassword != confirmPassword) {
+            new Dialog("修改密码", "两次密码输入不一致").warning();
+            return;
+        }
 
-    if ($(".article-audit .container").length > 0) {
-        var quill = new Quill(".article-audit .container", {
-            modules: {
-                toolbar: false
-            },
-            theme: 'snow',
-            readOnly: true
-        });
+        var formData = new FormData();
+        formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+        formData.append("password", newPassword);
 
-        var delta = JSON.parse($(".article-audit .article-content").text());
-        quill.setContents(delta.ops);
-    }
-
-    $(".article-audit .publish.button").on("click", function () {
-        new Dialog("发布文章", "确定要发布文章？ 文章发布以后即可在网站访问", function () {
-            showDimmer();
-            var formData = new FormData();
-            formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
-            formData.append("id", $(".article-audit .input.id").val());
-
-            $.ajax({
-                url: "/api/article/publish",
-                type: "post",
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function (status) {
-                    if (status) {
-                        new Dialog("发布文章", "发布成功", function () {
-                            hideDimmer();
-                            window.location.reload();
-                        }).message();
-                    } else {
-                        new Dialog("发布文章", "发布失败", function () {
-                            hideDimmer();
-                        }).error();
-                    }
-                },
-                error: function () {
-                    new Dialog("发布文章", "发布失败", function () {
-                        hideDimmer();
+        $.ajax({
+            url: "/password",
+            type: "post",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (status) {
+                if ("success" == status) {
+                    new Dialog("修改密码", "修改密码成功", function () {
+                        window.location.reload();
+                    }).message();
+                } else {
+                    new Dialog("修改密码", "修改密码失败，原因:" + status, function () {
                     }).error();
                 }
-            });
-        }).confirm();
-    });
+            },
+            error: function () {
+                new Dialog("修改密码", "修改密码失败", function () {
+                }).error();
+            }
+        });
 
-    $(".article-audit .reject.button").on("click", function () {
-        new Dialog("驳回文章", "确定要驳回文章？", function () {
-            showDimmer();
-            var formData = new FormData();
-            formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
-            formData.append("id", $(".article-audit .input.id").val());
-
-            $.ajax({
-                url: "/api/article/reject",
-                type: "post",
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function (status) {
-                    if (status) {
-                        new Dialog("驳回文章", "驳回成功", function () {
-                            hideDimmer();
-                            window.location.reload();
-                        }).message();
-                    } else {
-                        new Dialog("驳回文章", "驳回失败", function () {
-                            hideDimmer();
-                        }).error();
-                    }
-                },
-                error: function () {
-                    new Dialog("驳回文章", "驳回失败", function () {
-                        hideDimmer();
-                    }).error();
-                }
-            });
-        }).confirm();
     });
 });
 $(document).ready(function () {
@@ -50564,6 +50988,7 @@ $(document).ready(function () {
     $('.ui.menu .ui.dropdown').dropdown({on: 'hover'});
     $('.ui.username.button').popup({
         position: "bottom center",
+        inline: true,
         on: "click"
     });
 
@@ -50595,7 +51020,29 @@ $(document).ready(function () {
  * 后台导航栏所需
  */
 $(document).ready(function () {
-    $('.ui.admin.menu .ui.accordion').accordion('refresh');
+    var getAccordionIndex = function () {
+        var location = window.location.pathname;
+
+        if (location.startsWith("/admin/static")) {
+            return $(".ui.admin.menu .ui.accordion > .item").index($(".static.item"));
+        } else if (location.startsWith("/admin/user/fellowship") || location.startsWith("/admin/fellowship")) {
+            return $(".ui.admin.menu .ui.accordion > .item").index($(".fellowship.item"));
+        } else if (location.startsWith("/admin/navigation")) {
+            return $(".ui.admin.menu .ui.accordion > .item").index($(".navigation.item"));
+        } else if (location.startsWith("/admin/notification")) {
+            return $(".ui.admin.menu .ui.accordion > .item").index($(".notification.item"));
+        } else if (location.startsWith("/admin/message")) {
+            return $(".ui.admin.menu .ui.accordion > .item").index($(".message.item"));
+        } else if (location.startsWith("/admin/user")) {
+            return $(".ui.admin.menu .ui.accordion > .item").index($(".user.item"));
+        } else if (location.startsWith("/admin/article")) {
+            return $(".ui.admin.menu .ui.accordion > .item").index($(".article.item"));
+        } else if (location.startsWith("/admin/info") || location.startsWith("/admin/password")) {
+            return $(".ui.admin.menu .ui.accordion > .item").index($(".info.item"));
+        }
+    };
+
+    $('.ui.admin.menu .ui.accordion').accordion('open', getAccordionIndex() - 1);
     $('.ui.admin.menu .ui.dropdown').dropdown();
 });
 

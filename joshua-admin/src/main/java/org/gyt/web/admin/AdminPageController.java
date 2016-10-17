@@ -5,6 +5,7 @@ import org.gyt.web.api.repository.MessageRepository;
 import org.gyt.web.api.service.FellowshipService;
 import org.gyt.web.api.service.UserService;
 import org.gyt.web.api.utils.ModelAndViewUtils;
+import org.gyt.web.model.ArticleStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,7 +16,7 @@ import org.springframework.web.servlet.ModelAndView;
  * Created by Administrator on 2016/9/16.
  */
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/")
 public class AdminPageController {
 
     @Autowired
@@ -30,13 +31,21 @@ public class AdminPageController {
     @Autowired
     private MessageRepository messageRepository;
 
-    @RequestMapping("/")
+    @Autowired
+    private ModelAndViewUtils modelAndViewUtils;
+
+    @RequestMapping("admin")
     public ModelAndView home() {
-        ModelAndView modelAndView = ModelAndViewUtils.newModelAndView("admin-home");
+        ModelAndView modelAndView = modelAndViewUtils.newAdminModelAndView("admin-home");
         modelAndView.addObject("resistedCount", userService.count());
         modelAndView.addObject("fellowshipCount", fellowshipService.getAll().size());
-        modelAndView.addObject("articleCount", articleRepository.count());
+        modelAndView.addObject("articleCount", articleRepository.findAll().stream().filter(article -> article.getStatus().equals(ArticleStatus.PUBLISHED)).count());
         modelAndView.addObject("messageCount", messageRepository.count());
         return modelAndView;
+    }
+
+    @RequestMapping("admin/")
+    public ModelAndView home2() {
+        return home();
     }
 }

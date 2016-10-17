@@ -2,8 +2,7 @@
 后台用户管理组件
 -->
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/xhtml"
->
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8"/>
     <title>后台用户</title>
@@ -11,13 +10,13 @@
 </head>
 <body>
 
-<table th:fragment="table (items)" class="ui celled table">
+<table th:fragment="table (items)" class="ui celled selectable sortable table">
     <thead>
     <tr>
-        <th>用户名</th>
-        <th>用户昵称</th>
-        <th>用户状态</th>
-        <th>操作</th>
+        <th class="two wide">用户名</th>
+        <th class="four wide">用户昵称</th>
+        <th class="one wide">用户状态</th>
+        <th class="nine wide">操作</th>
     </tr>
     </thead>
     <tbody>
@@ -47,6 +46,13 @@
         </td>
     </tr>
     </tbody>
+    <tfoot>
+    <tr>
+        <th class="center aligned" colspan="4">
+            <div th:replace="fragment/pagination :: basic"></div>
+        </th>
+    </tr>
+    </tfoot>
 </table>
 
 <script src="../../websrc/js/lib-001-jquery.js"></script>

@@ -21,14 +21,17 @@ public class ArticlePageController {
     @Autowired
     private ArticleService articleService;
 
+    @Autowired
+    private ModelAndViewUtils modelAndViewUtils;
+
     @RequestMapping("/{id}")
     public ModelAndView detailsPage(
             @PathVariable String id
     ) {
-        ModelAndView modelAndView = ModelAndViewUtils.newModelAndView("article-details");
+        ModelAndView modelAndView = modelAndViewUtils.newModelAndView("article-details");
         Article article = articleService.get(Long.valueOf(id));
 
-        if (null == article || !article.getStatus().equals(ArticleStatus.PUBLISHED)) {
+        if (null == article || article.isDisable() || !article.getStatus().equals(ArticleStatus.PUBLISHED)) {
             modelAndView.setViewName("404");
             modelAndView.addObject("message", "文章不存在或者未发布");
         } else {

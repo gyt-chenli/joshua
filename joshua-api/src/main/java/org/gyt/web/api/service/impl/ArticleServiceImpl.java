@@ -2,14 +2,9 @@ package org.gyt.web.api.service.impl;
 
 import org.gyt.web.api.repository.ArticleRepository;
 import org.gyt.web.api.service.ArticleService;
-import org.gyt.web.api.service.FellowshipService;
-import org.gyt.web.api.service.UserService;
 import org.gyt.web.model.Article;
 import org.gyt.web.model.ArticleStatus;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,12 +16,6 @@ public class ArticleServiceImpl implements ArticleService {
     @Autowired
     private ArticleRepository articleRepository;
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private FellowshipService fellowshipService;
-
     @Override
     public Article get(Long id) {
         return articleRepository.findOne(id);
@@ -34,7 +23,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public List<Article> getFromFellowship(String name) {
-        return articleRepository.findAll().stream().filter(article -> article.getFellowship() != null && article.getFellowship().getName().equals(name)).collect(Collectors.toList());
+        return articleRepository.findAll().stream().filter(article -> article.isDisable() && article.getFellowship() != null && article.getFellowship().getName().equals(name)).collect(Collectors.toList());
     }
 
     @Override
@@ -44,18 +33,29 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public List<Article> getFromUser(String username) {
-        return articleRepository.findAll().stream().filter(article -> article.getAuthor().getUsername().equals(username) || article.getAuditor().getUsername().equals(username)).collect(Collectors.toList());
+        return articleRepository.findAll().stream().filter(article -> article.getAuthor().getUsername().equals(username) || (article.getAuditor() != null && article.getAuditor().getUsername().equals(username))).collect(Collectors.toList());
     }
 
     @Override
     public List<Article> getLatestArticles() {
-        Pageable pageable = new PageRequest(0, 20, Sort.Direction.fromString("ASC"), "createdDate");
-        return articleRepository.findAll(pageable).getContent().stream().filter(article -> article.getStatus().equals(ArticleStatus.PUBLISHED)).collect(Collectors.toList());
+        List<Article> articleList = articleRepository.findAll().stream().filter(article -> !article.isDisable() && article.getStatus().equals(ArticleStatus.PUBLISHED)).collect(Collectors.toList());
+        articleList.sort((o1, o2) -> o2.getLastModifiedTime().compareTo(o1.getLastModifiedTime()));
+
+        if (articleList.size() > 5) {
+            return articleList.subList(0, 5);
+        }
+
+        return articleList;
     }
 
     @Override
-    public boolean createOrUpdate(Article article) {
-        return articleRepository.save(article) != null;
+    public List<Article> getAll() {
+        return articleRepository.findAll();
+    }
+
+    @Override
+    public Article createOrUpdate(Article article) {
+        return articleRepository.save(article);
     }
 
     @Override

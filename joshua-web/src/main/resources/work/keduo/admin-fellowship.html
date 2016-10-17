@@ -10,8 +10,13 @@
 
 <div class="ui admin layout root">
     <div th:replace="fragment/admin-layout :: header('团契管理', ${subtitle})">布局标题</div>
+<<<<<<< HEAD:joshua-web/src/main/resources/work/keduo/admin-fellowship.html
     <div th:replace="fragment/admin-fellowship :: table(${fellowships})">用户表格</div>
     <form class="ui admin user form" th:action="@{/}" th:object="${fellowships}" method="post" style="display: none">
+=======
+    <div th:replace="fragment/admin-fellowship :: table(${items})"></div>
+    <form class="ui admin user form" th:action="@{/}" th:object="${users}" method="post" style="display: none">
+>>>>>>> aa7811005ae1e352128f6873ade34817c0f00d15:joshua-admin/src/main/resources/templates/admin-fellowship.html
     </form>
 </div>
 

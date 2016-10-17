@@ -1,6 +1,8 @@
 package org.gyt.web.controller;
 
+import org.gyt.web.api.service.RoleService;
 import org.gyt.web.api.service.UserService;
+import org.gyt.web.api.utils.ModelAndViewUtils;
 import org.gyt.web.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -16,12 +18,18 @@ public class LoginPageController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private RoleService roleService;
+
+    @Autowired
+    private ModelAndViewUtils modelAndViewUtils;
+
     @RequestMapping("/login")
     public ModelAndView getPage(
             @RequestParam(required = false) String error,
             @RequestParam(required = false) String logout
     ) {
-        ModelAndView modelAndView = new ModelAndView("login");
+        ModelAndView modelAndView = modelAndViewUtils.newModelAndView("login");
         modelAndView.addObject("user", new User());
 
         if (null != error) {
@@ -35,11 +43,19 @@ public class LoginPageController {
         return modelAndView;
     }
 
+    @RequestMapping(value = "/forget", method = RequestMethod.GET)
+    public ModelAndView forget() {
+        ModelAndView modelAndView = modelAndViewUtils.newModelAndView("forget");
+
+        return modelAndView;
+    }
+
     @RequestMapping(value = "/logon", method = RequestMethod.POST)
     public ModelAndView logon(@ModelAttribute User user) {
-        ModelAndView modelAndView = new ModelAndView("login");
+        ModelAndView modelAndView = modelAndViewUtils.newModelAndView("login");
 
         if (userService.create(user)) {
+            roleService.addToUser(user.getUsername(), "USER");
             modelAndView.addObject("logon", "success");
         } else {
             modelAndView.addObject("logon", "failed");

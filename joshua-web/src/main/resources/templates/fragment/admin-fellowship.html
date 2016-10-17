@@ -3,24 +3,44 @@
 -->
 <!DOCTYPE html>
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/xhtml"
+<<<<<<< HEAD
 >
 <head>
     <meta charset="utf-8"/>
     <title>后台团契管理</title>
+=======
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4">
+<head>
+    <meta charset="utf-8"/>
+    <title>后台用户</title>
+>>>>>>> aa7811005ae1e352128f6873ade34817c0f00d15
     <link rel="stylesheet" href="../../public/assets/css/joshua.min.css"/>
 </head>
 <body>
 
+<<<<<<< HEAD
 <table th:fragment="table (items)" class="ui celled table">
     <thead>
     <tr>
         <th>团契名称</th>
         <th>团契所有者</th>
         <th>操作</th>
+=======
+<table th:fragment="table (items)" class="ui celled selectable sortable table">
+    <thead>
+    <tr>
+        <th class="two wide">团契名称</th>
+        <th class="two wide">创建日期</th>
+        <th class="two wide">所有者</th>
+        <th class="two wide">管理员数量</th>
+        <th class="two wide">文章数量</th>
+        <th class="six wide">操作</th>
+>>>>>>> aa7811005ae1e352128f6873ade34817c0f00d15
     </tr>
     </thead>
     <tbody>
     <tr th:if="${#lists.isEmpty(items)}">
+<<<<<<< HEAD
         <td th:colspan="3">当前还没有内容</td>
     </tr>
     <tr th:each="item : ${items}">
@@ -35,12 +55,34 @@
                     class="ui admin fellowship enable tiny green button">激活
             </button>
             <a class="ui tiny button" th:href="@{'/admin/fellowship/' + ${item.owner_name}}" target="_blank">更改所有者</a>
+=======
+        <td th:colspan="6">当前还没有内容</td>
+    </tr>
+
+    <tr th:each="item : ${items}">
+        <td th:utext="${item.displayName}"></td>
+        <td th:utext="${#dates.format(item.createdDate,'yyyy-MM-dd')}"></td>
+        <td th:utext="${item.owner.nickname}"></td>
+        <td th:utext="${item.admins.size()}" class="right aligned"></td>
+        <td th:utext="${item.articles.size()}" class="right aligned"></td>
+        <td>
+            <a class="ui tiny button" th:href="@{'/admin/fellowship/' + ${item.name}}" target="_blank">查看</a>
+            <button sec:authorize="hasRole('ROLE_MANAGE_FELLOWSHIP')" th:if="${not item.isEnable()}"
+                    class="ui admin fellowship enable green tiny button" th:attr="data-name=${item.name}">激活
+            </button>
+            <button sec:authorize="hasRole('ROLE_MANAGE_FELLOWSHIP')" th:if="${item.isEnable()}"
+                    class="ui admin fellowship disable red tiny button" th:attr="data-name=${item.name}">禁用
+            </button>
+>>>>>>> aa7811005ae1e352128f6873ade34817c0f00d15
         </td>
     </tr>
     </tbody>
 </table>
 
+<<<<<<< HEAD
 <script src="../../websrc/js/lib-001-jquery.js"></script>
 <script src="../../websrc/js/lib-002-semantic.js"></script>
+=======
+>>>>>>> aa7811005ae1e352128f6873ade34817c0f00d15
 </body>
 </html>

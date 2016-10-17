@@ -4,16 +4,23 @@ import org.apache.commons.lang3.StringUtils;
 import org.gyt.web.api.service.ArticleService;
 import org.gyt.web.api.service.FellowshipService;
 import org.gyt.web.api.utils.ModelAndViewUtils;
+import org.gyt.web.api.utils.PaginationComponent;
 import org.gyt.web.model.Article;
 import org.gyt.web.model.ArticleStatus;
 import org.gyt.web.model.Fellowship;
 import org.gyt.web.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -30,35 +37,57 @@ public class AdminArticlePageController {
     @Autowired
     private FellowshipService fellowshipService;
 
+    @Autowired
+    private ModelAndViewUtils modelAndViewUtils;
+
+    @Autowired
+    private PaginationComponent paginationComponent;
+
     @RequestMapping("/article")
     public ModelAndView tablePage(
-            @RequestParam(required = false) String type
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false, defaultValue = "1") int pageNumber,
+            @RequestParam(required = false, defaultValue = "20") int pageSize
     ) {
-        ModelAndView modelAndView = ModelAndViewUtils.newModelAndView("admin-article");
+        ModelAndView modelAndView = modelAndViewUtils.newAdminModelAndView("admin-article");
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         List<Article> articleList = articleService.getFromUser(user.getUsername());
 
-        if (StringUtils.isEmpty(type)) {
-            modelAndView.addObject("items", articleList);
+        if (StringUtils.isEmpty(type) || type.equalsIgnoreCase("MINE")) {
             modelAndView.addObject("subtitle", "我的文章");
+            type = "MINE";
         } else if (type.equalsIgnoreCase("RAW")) {
-            modelAndView.addObject("items", articleList.stream().filter(article -> article.getStatus().equals(ArticleStatus.RAW)).collect(Collectors.toList()));
-            modelAndView.addObject("subtitle", "草稿箱");
+            articleList = articleList.stream().filter(article -> article.getStatus().equals(ArticleStatus.RAW)).collect(Collectors.toList());
+            modelAndView.addObject("subtitle", "我的草稿箱");
         } else if (type.equalsIgnoreCase("AUDIT")) {
-            modelAndView.addObject("items", articleList.stream().filter(article -> article.getStatus().equals(ArticleStatus.AUDITING)).collect(Collectors.toList()));
+            if (user.getRoles().stream().anyMatch(role -> role.getAuthorities().stream().anyMatch(s -> s.equals("ROLE_MANAGE_ARTICLE")))) {
+                articleList = articleService.getAll().stream().filter(article -> article.getStatus().equals(ArticleStatus.AUDITING)).collect(Collectors.toList());
+            } else {
+                articleList = articleList.stream().filter(article -> article.getStatus().equals(ArticleStatus.AUDITING)).collect(Collectors.toList());
+            }
             modelAndView.addObject("subtitle", "待审核文章");
         } else if (type.equalsIgnoreCase("PUBLISH")) {
-            modelAndView.addObject("items", articleList.stream().filter(article -> article.getStatus().equals(ArticleStatus.PUBLISHED)).collect(Collectors.toList()));
+            if (user.getRoles().stream().anyMatch(role -> role.getAuthorities().stream().anyMatch(s -> s.equals("ROLE_MANAGE_ARTICLE")))) {
+                articleList = articleService.getAll().stream().filter(article -> article.getStatus().equals(ArticleStatus.PUBLISHED)).collect(Collectors.toList());
+            } else {
+                articleList = articleList.stream().filter(article -> article.getStatus().equals(ArticleStatus.PUBLISHED)).collect(Collectors.toList());
+            }
             modelAndView.addObject("subtitle", "已发布文章");
         } else if (type.equalsIgnoreCase("REJECT")) {
-            modelAndView.addObject("items", articleList.stream().filter(article -> article.getStatus().equals(ArticleStatus.REJECTED)).collect(Collectors.toList()));
-            modelAndView.addObject("subtitle", "驳回文章");
+            articleList = articleList.stream().filter(article -> article.getStatus().equals(ArticleStatus.REJECTED)).collect(Collectors.toList());
+            modelAndView.addObject("subtitle", "我的驳回文章");
         } else {
-            modelAndView.addObject("items", new ArrayList<>());
+            articleList = new ArrayList<>();
             modelAndView.addObject("subtitle", "未知类型");
         }
+
+        articleList.sort((o1, o2) -> o2.getLastModifiedTime().compareTo(o1.getLastModifiedTime()));
+
+        modelAndView.addObject("type", type);
+        modelAndView.addObject("items", paginationComponent.listPagination(articleList, pageNumber, pageSize));
+        paginationComponent.addPaginationModel(modelAndView, "/admin/article?type=" + type, articleList.size(), pageNumber, pageSize);
         return modelAndView;
     }
 
@@ -66,7 +95,7 @@ public class AdminArticlePageController {
     public ModelAndView detailsPage(
             @PathVariable String id
     ) {
-        ModelAndView modelAndView = ModelAndViewUtils.newModelAndView("admin-article-details");
+        ModelAndView modelAndView = modelAndViewUtils.newAdminModelAndView("admin-article-details");
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Article article = articleService.get(Long.valueOf(id));
@@ -75,6 +104,8 @@ public class AdminArticlePageController {
             modelAndView.setViewName("404");
             modelAndView.addObject("message", String.format("找不到文章：%s", id));
         } else {
+            modelAndView.addObject("title", article.getTitle());
+            modelAndView.addObject("subtitle", "文章预览");
             modelAndView.addObject("item", article);
             modelAndView.addObject("user", user);
         }
@@ -86,7 +117,7 @@ public class AdminArticlePageController {
     public ModelAndView editArticlePage(
             @PathVariable String id
     ) {
-        ModelAndView modelAndView = ModelAndViewUtils.newModelAndView("admin-article-editor");
+        ModelAndView modelAndView = modelAndViewUtils.newAdminModelAndView("admin-article-editor");
         modelAndView.addObject("title", "编辑文章");
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -112,7 +143,7 @@ public class AdminArticlePageController {
     public ModelAndView auditArticlePage(
             @PathVariable String id
     ) {
-        ModelAndView modelAndView = ModelAndViewUtils.newModelAndView("admin-article-audit");
+        ModelAndView modelAndView = modelAndViewUtils.newAdminModelAndView("admin-article-audit");
         modelAndView.addObject("title", "审核文章");
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -129,7 +160,7 @@ public class AdminArticlePageController {
 
     @RequestMapping("/article/new")
     public ModelAndView newArticlePage() {
-        ModelAndView modelAndView = ModelAndViewUtils.newModelAndView("admin-article-editor");
+        ModelAndView modelAndView = modelAndViewUtils.newAdminModelAndView("admin-article-editor");
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         if (fellowshipService.getUserOwnerFellowship(user.getUsername()).isEmpty() && fellowshipService.getUserAdminFellowship(user.getUsername()).isEmpty()) {
@@ -146,29 +177,5 @@ public class AdminArticlePageController {
         fellowshipSet.addAll(fellowshipService.getUserAdminFellowship(user.getUsername()));
         modelAndView.addObject("fellowship", fellowshipSet);
         return modelAndView;
-    }
-
-    @RequestMapping(value = "/article/save", method = RequestMethod.POST)
-    public String saveArticle(@ModelAttribute Article article) {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        if (article.getId() == null) {
-            article.setAuthor(user);
-            article.setCreatedDate(new Date());
-        } else {
-            Article src = articleService.get(article.getId());
-            article.setAuthor(src.getAuthor());
-            article.setCreatedDate(src.getCreatedDate());
-
-            if (src.getStatus().equals(ArticleStatus.PUBLISHED)) {
-                return "该文章已经发布，不能修改已经发布的文章";
-            }
-        }
-
-
-        article.setLastModifiedTime(new Date());
-        article.setLastModifiedUser(user);
-
-        return articleService.createOrUpdate(article) ? "success" : null;
     }
 }
