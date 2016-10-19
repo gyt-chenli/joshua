@@ -1,5 +1,5 @@
 <!--
-文章列表基本组件，用于显示文章列表
+    文章列表基本组件，用于显示文章列表
 -->
 <!DOCTYPE html>
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/xhtml">
@@ -17,11 +17,15 @@
 </div>
 
 <!-- 前端文章列表组件 -->
-<div th:fragment="table ( items)" class="ui divided items">
+<div th:fragment="table (items)" class="ui divided items">
+    <h4 th:if="${#lists.isEmpty(items)}" class="ui header">暂时还没有消息</h4>
     <div th:each="article : ${items}" th:if="${not article.isDisable() and article.status.name() == 'PUBLISHED'}"
          class="item">
         <a class="ui tiny image" th:href="@{'/article/' + ${article.id}}" target="_blank">
-            <img src="../../public/assets/images/logo.gif" th:src="@{/assets/images/placeholder.png}"/>
+            <img th:if="${article.cover == null}" src="../../public/assets/images/logo.gif"
+                 th:src="@{/assets/images/placeholder.png}"/>
+            <img th:if="${article.cover != null}" src="../../public/assets/images/logo.gif"
+                 th:src="@{'/cover/' + ${article.id}}"/>
         </a>
         <div class="content">
             <a class="header" th:utext="${article.title}" th:href="@{'/article/' + ${article.id}}"

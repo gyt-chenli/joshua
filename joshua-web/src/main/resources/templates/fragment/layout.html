@@ -12,7 +12,7 @@ HTML 布局基本组件
 
 <!-- 标题组件 -->
 <div th:fragment="header (title)" class="ui layout header">
-    <h1 class="ui header" th:utext="${title}">布局标题</h1>
+    <h1 class="ui orange header" th:utext="${title}">布局标题</h1>
     <div class="ui dividing header"></div>
 </div>
 
@@ -41,7 +41,6 @@ HTML 布局基本组件
         <img class="ui medium image" th:src="@{${picture}}"/>
     </a>
 </div>
-
 
 <!-- 图片效果图组件 -->
 <div th:fragment="circular-picture (url, picture)" class="joshua circular picture">

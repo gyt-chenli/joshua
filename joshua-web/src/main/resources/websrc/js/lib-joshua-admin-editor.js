@@ -2,6 +2,30 @@
  * 公共函数定义
  */
 
+/**
+ * 选择文章封面
+ */
+
+function selectCover(fileDom) {
+    if (window.FileReader) {
+        var reader = new FileReader();
+
+        var file = fileDom.files[0];
+        var imageType = /^image\//;
+        if (!imageType.test(file.type)) {
+            new Dialog("选择封面", "请选择图片").warning();
+            return;
+        }
+        reader.onload = function (e) {
+            var img = document.getElementById("cover-picture");
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        new Dialog("选择封面", "您的设部不支持该功能").error();
+    }
+}
+
 var showDimmer = function () {
     $(".ui.dimmer").dimmer("show");
 };
@@ -24,11 +48,17 @@ var saveArticle = function (quill) {
         return;
     }
 
+    if (quill.getLength() == 1) {
+        new Dialog("保存文章", "文章内容不能为空").message();
+        return;
+    }
+
     showDimmer();
 
     var formData = new FormData();
     formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
     formData.append("id", $(".article-editor .input.id").val());
+    formData.append("file", $("#file")[0].files[0]);
     formData.append("title", title);
     formData.append("fellowship", fellowship);
     formData.append("description", $(".article-editor .input.description").val());
@@ -44,11 +74,8 @@ var saveArticle = function (quill) {
         processData: false,
         contentType: false,
         success: function (status) {
-            if (status) {
-                hideDimmer();
-                new Dialog("保存文章", "保存成功", function () {
-                    window.location = '/admin/article/' + status + '/edit';
-                }).message();
+            if (parseInt(status)) {
+                window.location = '/admin/article/' + status + '/edit';
             } else {
                 new Dialog("保存文章", "保存失败，原因：" + status, function () {
                     hideDimmer();
@@ -57,6 +84,37 @@ var saveArticle = function (quill) {
         },
         error: function () {
             new Dialog("保存文章", "保存失败", function () {
+                hideDimmer();
+            }).error();
+        }
+    });
+};
+
+
+var deleteArticle = function (id) {
+    var formData = new FormData();
+    formData.append("_csrf", $(".ui.admin.user.form input[name='_csrf']").val());
+    formData.append("id", id);
+
+    $.ajax({
+        url: "/api/article/delete",
+        type: "post",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (status) {
+            if (status == "success") {
+                new Dialog("删除文章", "删除文章成功", function () {
+                    window.location = '/admin/article';
+                }).message();
+            } else {
+                new Dialog("删除文章", "删除文章失败，原因：" + status, function () {
+                    hideDimmer();
+                }).error();
+            }
+        },
+        error: function () {
+            new Dialog("删除文章", "删除文章失败", function () {
                 hideDimmer();
             }).error();
         }
@@ -118,6 +176,18 @@ $(document).ready(function () {
         saveArticle(quill);
     });
 
+
+    /**
+     * 删除文章
+     */
+    $(".article-editor .ui.delete.button").on("click", function () {
+        var id = $(this).data("id");
+        new Dialog("删除文章", "确定要删除该文章吗？", function () {
+            deleteArticle(id);
+        }).confirm();
+    });
+
+
     /**
      * 申请发布文章
      */
@@ -138,10 +208,7 @@ $(document).ready(function () {
                 contentType: false,
                 success: function (status) {
                     if ("success" == status) {
-                        new Dialog("申请发布", "申请发布成功", function () {
-                            hideDimmer();
-                            window.location.reload();
-                        }).message();
+                        window.location.reload();
                     } else {
                         new Dialog("申请发布", "申请发布失败，原因:" + status, function () {
                             hideDimmer();
@@ -215,10 +282,7 @@ $(document).ready(function () {
                 contentType: false,
                 success: function (status) {
                     if ("success" == status) {
-                        new Dialog("发布文章", "发布成功", function () {
-                            hideDimmer();
-                            window.location.reload();
-                        }).message();
+                        window.location.reload();
                     } else {
                         new Dialog("发布文章", "发布失败，原因:" + status, function () {
                             hideDimmer();
@@ -249,10 +313,7 @@ $(document).ready(function () {
                 contentType: false,
                 success: function (status) {
                     if ("success" == status) {
-                        new Dialog("驳回文章", "驳回成功", function () {
-                            hideDimmer();
-                            window.location.reload();
-                        }).message();
+                        window.location.reload();
                     } else {
                         new Dialog("驳回文章", "驳回失败，原因:" + status, function () {
                             hideDimmer();

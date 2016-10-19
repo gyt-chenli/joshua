@@ -1,0 +1,107 @@
+<!--
+一级页面 - 首页基本组件
+-->
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/xhtml">
+<!--/* 引用基本组件header中的header，head中的元素内容会被基本组件替换掉，这里面的内容仅用于本地测试 */-->
+<head th:replace="fragment/header :: head">
+    <meta charset="UTF-8"/>
+    <title>光音堂</title>
+    <link href="../../public/assets/css/joshua.min.css" rel="stylesheet"/>
+</head>
+
+<body>
+<!-- 活动大图组件 -->
+<section th:fragment="section1" id="section1">
+    <div id="slider">
+        <a th:each="image : ${imageGallery}" th:href="@{#}">
+            <img th:src="@{${image}}"/>
+        </a>
+    </div>
+</section>
+
+<!-- 用户分流组件 -->
+<section th:fragment="section2" id="section2" class="ui grid">
+    <div class="row" data-aos="zoom-in">
+        <div class="ui equal width grid container">
+            <div class="column">
+                <div th:replace="staticPage/homePage :: section2-item('新人', '如果你第一次来到光音堂，请访问这里', '/assets/images/homePage/ss1.jpg', '/newcomer')"></div>
+            </div>
+            <div class="column">
+                <div th:replace="staticPage/homePage :: section2-item('主日崇拜', '每周主日消息更新，就在这里。每周日9:00-10:30 10:45-12:00', '/assets/images/homePage/ss2.jpg', '/worship')"></div>
+            </div>
+            <div class="column">
+                <div th:replace="staticPage/homePage :: section2-item('团契生活', '找到你所在的团契小组，参与其中', '/assets/images/homePage/ss3.jpg', '/fellowship')"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 六图介绍组件 -->
+<section th:fragment="section3" id="section3">
+    <div class="ui grid container">
+        <div class="six wide column" style="margin-top: 20px">
+            <h2>教堂简介</h2>
+            <p style="text-align: justify">
+                基督教光音堂位于成都市高新区天府一街 886 号（天府一街剑南大道口），是由芬兰设计师设计，典型的北欧简约风格。
+                教堂于2013年10月13日开始聚会。教堂之所以叫光音堂是因为设计师在对教堂的设计上充分运用“光”和“声音”的元素。教堂被称为“光之教堂”，钟楼叫“天使之音”；
+                “光之教堂”四壁和屋顶都用黑色墙体，使教堂显得庄严而神圣，教堂内正面墙上一副宽9米，高7米的写意画被称为“创造之光”，由芬兰画家精心构思创作，将上帝在起初从空虚混沌渊面黑暗中创造出光与自然、生命的大能尽显出来。
+                教堂大门右侧墙上是充分运用光的原理而设计建造的“森林之光”，当太阳光打在玻璃墙上时，户外大树与铸铁管的映像耀然其上，使人仿佛置身于大自然，吮吸大自然的气息和雨露，使人有心旷神怡之感。
+            </p>
+            <a th:href="@{/about}" class="ui green button">了解更多</a>
+        </div>
+        <div class="ten wide column">
+            <div class="ui three column doubling grid">
+                <div class="centered row" data-aos="fade-left">
+                    <div th:replace="fragment/layout :: joshua-picture('/believe', '/assets/images/homePage/s1.jpg')"></div>
+                    <div th:replace="fragment/layout :: joshua-picture('/sunday', '/assets/images/homePage/s2.jpg')"></div>
+                    <div th:replace="fragment/layout :: joshua-picture('/service', '/assets/images/homePage/s3.jpg')"></div>
+                </div>
+                <div class="centered row" data-aos="fade-left">
+                    <div th:replace="fragment/layout :: joshua-picture('/suffrage', '/assets/images/homePage/s4.jpg')"></div>
+                    <div th:replace="fragment/layout :: joshua-picture('/testimony', '/assets/images/homePage/s5.jpg')"></div>
+                    <div th:replace="fragment/layout :: joshua-picture('/public', '/assets/images/homePage/s6.jpg')"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 最新消息组件 -->
+<section th:fragment="section4" id="section4" data-aos="zoom-out">
+    <div class="ui grid container">
+        <div class="eight wide column">
+            <h2>教堂资讯</h2>
+            <div th:replace="fragment/article :: table(${churchArticles})"></div>
+        </div>
+        <div class="eight wide column">
+            <h2>团契文章</h2>
+            <div th:replace="fragment/article :: table(${fellowshipArticles})"></div>
+        </div>
+    </div>
+</section>
+
+<!--
+    分流单个组件
+-->
+<div th:fragment="section2-item (title, description, picture, link)" class="ui items">
+    <div class="item">
+        <div class="ui small circular image joshua picture">
+            <a th:href="@{${link}}">
+                <img th:src="@{${picture}}"/>
+            </a>
+        </div>
+        <div class="content">
+            <a class="header" th:href="@{${link}}" th:utext="${title}">标题</a>
+            <div class="description">
+                <p th:utext="${description}">描述</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--/* 引用页脚组件 */-->
+<div th:replace="fragment/footer :: footer">页脚</div>
+<script src="../../public/assets/js/joshua.min.js" th:src="@{/assets/js/joshua.min.js}"></script>
+</body>
+</html>

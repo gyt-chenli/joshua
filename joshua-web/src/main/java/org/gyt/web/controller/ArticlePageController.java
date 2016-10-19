@@ -28,13 +28,14 @@ public class ArticlePageController {
     public ModelAndView detailsPage(
             @PathVariable String id
     ) {
-        ModelAndView modelAndView = modelAndViewUtils.newModelAndView("article-details");
+        ModelAndView modelAndView = modelAndViewUtils.newModelAndView("article");
         Article article = articleService.get(Long.valueOf(id));
 
         if (null == article || article.isDisable() || !article.getStatus().equals(ArticleStatus.PUBLISHED)) {
             modelAndView.setViewName("404");
             modelAndView.addObject("message", "文章不存在或者未发布");
         } else {
+            modelAndView.addObject("title", String.format("基督教光音堂 - %s", article.getTitle()));
             modelAndView.addObject("item", article);
             modelAndView.addObject("user", article.getAuthor());
 

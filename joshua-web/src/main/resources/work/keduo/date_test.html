@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>日期转换作业</title>
+</head>
+
+
+<body>
+<script>
+    function getDisplayDate(date) {
+        if(!date instanceof Date){
+            return date;
+        }
+        var currentDate=new Date();
+        var minute=(currentDate-date)/1000/60;
+        if(minute<0){
+            return date;
+        }
+        if(minute < 5){
+            return "发布时间小于5分钟";
+        }
+
+        if(minute>=5 && minute<60){
+            return "发布时间是"+ Math.ceil(minute) +"分钟之前";
+        }
+
+        var hour=minute/60;
+        if(hour>=1 && hour<24){
+            return "发布时间是" + Math.ceil(hour) + "小时之前";
+        }
+
+        var day=hour/24;
+        if(day>=1 && day<7){
+            return "发布时间是" + Math.ceil(day) + "天之前";
+        }
+
+        var week=day/7;
+        if(week>=1 && week<2){
+            return "发布时间是一周前";
+        }else if(week>=2){
+            return "发布时间是" + Math.ceil(week) + "周之前";
+        }else{
+            return "发布时间是" + date;
+        }
+    }
+    console.log(getDisplayDate(new Date("2016-10-19 14:58:00")));
+    console.log(getDisplayDate(new Date("2016-10-19 14:22:00")));
+    console.log(getDisplayDate(new Date("2016-10-18 14:22:00")));
+    console.log(getDisplayDate(new Date("2016-10-12 14:22:00")));
+    console.log(getDisplayDate(new Date("2016-7-18 14:22:00")));
+    console.log(getDisplayDate(new Date("2017-10-18 14:22:00")));
+</script>
+
+
+</body>
+</html>
